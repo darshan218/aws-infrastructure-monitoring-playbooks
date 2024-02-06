@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  vars:
+    cluster_name:  "{{ cluster_name }}"
+    service_name:  "{{ service_name}}"
+
+  tasks:
+    - name: Checking if ecs task is running
+      shell: "aws ecs describe-services --cluster {{ custer_name }} --services {{ service_name }} --query 'services[0].runningCount'"
+      register: ecs_tasks
+      until: ecs_tasks.stdout == "1"
+      retries: 10
+      delay: 90

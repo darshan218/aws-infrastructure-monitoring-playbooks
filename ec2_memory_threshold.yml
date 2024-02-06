@@ -1,0 +1,19 @@
+- hosts: "{{ host_group }}"
+  vars:
+    mount_points:
+      - {id: 0,   mount_point: "/",     threshold: 2}
+      - {id: 1,   mount_point: "/mnt",  threshold: 5}
+  tasks:
+    - name: "Gathering memory stats on: {{ mount_points }}"
+      shell: df {{ item.mount_point }} --output\=avail | tail -1
+      register: memory_stats
+      loop: "{{ mount_points }}"
+
+    - name: Checking memory threshold
+      assert:
+        that:
+          - "{{ memory_stats.results[item.id].stdout }} >= {{ item.threshold | int * 1024 * 1024 }}"
+        fail_msg: "{{ host_group }}({{ item.mount_point }}): {{ ( memory_stats.results[item.id].stdout | int / 1024 / 1024 ) | round(1,'floor') }} [Failing memory threshold]."
+        success_msg: "{{ host_group }}({{ item.mount_point }}): {{ ( memory_stats.results[item.id].stdout | int / 1024 / 1024 ) | round(1,'floor') }} [Passed memory threshold]."
+        quiet: true
+      loop: "{{ mount_points }}"
